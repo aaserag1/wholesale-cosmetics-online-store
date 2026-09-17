@@ -1,4 +1,4 @@
-﻿#!/bin/sh
+#!/bin/sh
 set -e
 
 echo "🚀 Initializing BeautyMart B2B Store..."

@@ -1,4 +1,4 @@
-﻿FROM node:22-alpine AS base
+FROM node:22-alpine AS base
 
 # Install dependencies only when needed
 FROM base AS deps
@@ -41,4 +41,4 @@ RUN chmod +x ./entrypoint.sh
 
 EXPOSE 3000
 
-ENTRYPOINT ["./entrypoint.sh"]
+ENTRYPOINT ["/bin/sh", "/app/entrypoint.sh"]
