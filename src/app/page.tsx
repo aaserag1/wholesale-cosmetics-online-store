@@ -3,6 +3,7 @@
 import Link from "next/link";
 import ProductCard from "@/components/ProductCard";
 import { useEffect, useState } from "react";
+import { useAuth } from "@/components/AuthContext";
 
 interface Product {
   id: number;
@@ -31,6 +32,7 @@ interface Category {
 }
 
 export default function HomePage() {
+  const { user } = useAuth();
   const [featured, setFeatured] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
 
@@ -50,9 +52,15 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 py-16 md:py-24">
           <div className="grid md:grid-cols-2 gap-10 items-center">
             <div className="animate-fade-in">
-              <span className="inline-block bg-pink-100 text-primary px-4 py-1.5 rounded-full text-sm font-bold mb-4">
-                🏢 المنصة الأولى لتوريد مستحضرات التجميل بالجملة
-              </span>
+              {user ? (
+                <span className="inline-flex items-center gap-2 bg-pink-100 text-primary px-4 py-1.5 rounded-full text-sm font-bold mb-4">
+                  <span>🌸</span> أهلاً بك يا {user.name} | {user.businessName || (user.isAdmin ? "👑 مسؤول النظام" : "حساب تاجر معتمد")}
+                </span>
+              ) : (
+                <span className="inline-block bg-pink-100 text-primary px-4 py-1.5 rounded-full text-sm font-bold mb-4">
+                  🏢 المنصة الأولى لتوريد مستحضرات التجميل بالجملة
+                </span>
+              )}
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-black leading-tight mb-6">
                 مستحضرات التجميل
                 <br />
@@ -64,16 +72,35 @@ export default function HomePage() {
               <div className="flex flex-wrap gap-4">
                 <Link
                   href="/products"
-                  className="bg-gradient-to-l from-primary to-secondary text-white px-8 py-3.5 rounded-full font-bold text-lg hover:shadow-xl hover:shadow-pink-200 transition-all active:scale-95"
+                  className="bg-gradient-to-l from-primary to-secondary text-white px-8 py-3.5 rounded-full font-bold text-lg hover:shadow-xl hover:shadow-pink-200 transition-all active:scale-95 flex items-center gap-2"
                 >
-                  📦 تصفح كتالوج الجملة
+                  <span>📦</span> تصفح كتالوج الجملة
                 </Link>
-                <Link
-                  href="/auth/register"
-                  className="border-2 border-primary text-primary px-8 py-3.5 rounded-full font-bold text-lg hover:bg-primary hover:text-white transition-all"
-                >
-                  فتح حساب تاجر / صالون
-                </Link>
+
+                {user ? (
+                  user.isAdmin ? (
+                    <Link
+                      href="/admin"
+                      className="bg-purple-700 hover:bg-purple-800 text-white px-8 py-3.5 rounded-full font-bold text-lg shadow-lg hover:shadow-purple-200 transition-all active:scale-95 flex items-center gap-2"
+                    >
+                      <span>⚙️</span> لوحة تحكم الإدارة
+                    </Link>
+                  ) : (
+                    <Link
+                      href="/account/profile"
+                      className="border-2 border-primary text-primary hover:bg-primary hover:text-white px-8 py-3.5 rounded-full font-bold text-lg transition-all active:scale-95 flex items-center gap-2"
+                    >
+                      <span>🏢</span> حسابك التجاري
+                    </Link>
+                  )
+                ) : (
+                  <Link
+                    href="/auth/register"
+                    className="border-2 border-primary text-primary px-8 py-3.5 rounded-full font-bold text-lg hover:bg-primary hover:text-white transition-all"
+                  >
+                    فتح حساب تاجر / صالون
+                  </Link>
+                )}
               </div>
               <div className="flex flex-wrap items-center gap-6 mt-8 text-sm text-gray-600">
                 <div className="flex items-center gap-2">
@@ -194,20 +221,56 @@ export default function HomePage() {
             <div className="absolute bottom-10 left-10 text-8xl">💄</div>
             <div className="absolute top-1/2 left-1/2 text-8xl">✨</div>
           </div>
-          <div className="relative">
-            <h2 className="text-3xl md:text-5xl font-black mb-4">
-              سجّل كتاجر أو صالون واستفد بخصومات الكميات
-            </h2>
-            <p className="text-xl opacity-90 mb-8 max-w-2xl mx-auto">
-              انضم لمئات الصالونات وتجار مستحضرات التجميل الذين يعتمدون على BeautyMart لتوريد بضاعتهم بأعلى هامش ربح
-            </p>
-            <Link
-              href="/auth/register"
-              className="bg-white text-primary px-10 py-4 rounded-full font-bold text-lg hover:shadow-xl transition-all inline-block active:scale-95"
-            >
-              🏢 فتح حساب تاجر الآن
-            </Link>
-          </div>
+          {user ? (
+            <div className="relative">
+              <h2 className="text-3xl md:text-5xl font-black mb-4">
+                أهلاً بك مجدداً يا {user.name} 👋
+              </h2>
+              <p className="text-xl opacity-90 mb-8 max-w-2xl mx-auto">
+                {user.businessName
+                  ? `حساب نشاطك التجاري (${user.businessName}) معتمد وجاهز لطلب الكميات بخصومات الجملة المباشرة.`
+                  : "حسابك التجاري مفعل وجاهز لطلب كميات الجملة مباشرة مع عروض الدست والكراتين."}
+              </p>
+              <div className="flex flex-wrap items-center justify-center gap-4">
+                <Link
+                  href="/products"
+                  className="bg-white text-primary px-10 py-4 rounded-full font-bold text-lg hover:shadow-xl transition-all inline-block active:scale-95"
+                >
+                  🛍️ مواصلة التسوق وتجهيز الطلبية
+                </Link>
+                {user.isAdmin ? (
+                  <Link
+                    href="/admin"
+                    className="bg-purple-900/80 hover:bg-purple-900 text-white px-8 py-4 rounded-full font-bold text-lg transition-all inline-block shadow-lg"
+                  >
+                    ⚙️ إدارة المنصة والطلبات
+                  </Link>
+                ) : (
+                  <Link
+                    href="/account/orders"
+                    className="bg-white/20 hover:bg-white/30 backdrop-blur border border-white/40 text-white px-8 py-4 rounded-full font-bold text-lg transition-all inline-block"
+                  >
+                    📦 تتبع طلباتك السابقة
+                  </Link>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="relative">
+              <h2 className="text-3xl md:text-5xl font-black mb-4">
+                سجّل كتاجر أو صالون واستفد بخصومات الكميات
+              </h2>
+              <p className="text-xl opacity-90 mb-8 max-w-2xl mx-auto">
+                انضم لمئات الصالونات وتجار مستحضرات التجميل الذين يعتمدون على BeautyMart لتوريد بضاعتهم بأعلى هامش ربح
+              </p>
+              <Link
+                href="/auth/register"
+                className="bg-white text-primary px-10 py-4 rounded-full font-bold text-lg hover:shadow-xl transition-all inline-block active:scale-95"
+              >
+                🏢 فتح حساب تاجر الآن
+              </Link>
+            </div>
+          )}
         </div>
       </section>
     </div>
