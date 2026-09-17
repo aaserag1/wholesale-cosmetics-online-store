@@ -122,3 +122,22 @@ export const orderItems = pgTable("order_items", {
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
   quantity: integer("quantity").notNull(),
 });
+
+// ── Site Settings ──────────────────────────────────────
+export const siteSettings = pgTable("site_settings", {
+  id: serial("id").primaryKey(),
+  siteName: varchar("site_name", { length: 255 }).default("BeautyMart").notNull(),
+  siteNameAr: varchar("site_name_ar", { length: 255 }).default("بيوتي مارت").notNull(),
+  tagline: varchar("tagline", { length: 255 }).default("المنصة الأولى لتوريد مستحضرات التجميل بالجملة"),
+  contactPhone: varchar("contact_phone", { length: 50 }).default("01000000000").notNull(),
+  contactWhatsapp: varchar("contact_whatsapp", { length: 50 }).default("201000000000").notNull(),
+  contactEmail: varchar("contact_email", { length: 255 }).default("info@beautymart.com").notNull(),
+  address: text("address").default("القاهرة، جمهورية مصر العربية"),
+  announcementText: text("announcement_text").default("🔥 خصم 10% على جميع طلبيات الجملة التي تتجاوز 10,000 ج.م | شحن لجميع المحافظات"),
+  announcementEnabled: boolean("announcement_enabled").default(true).notNull(),
+  minOrderTotal: decimal("min_order_total", { precision: 10, scale: 2 }).default("500.00").notNull(),
+  facebookUrl: varchar("facebook_url", { length: 255 }).default(""),
+  instagramUrl: varchar("instagram_url", { length: 255 }).default(""),
+  tiktokUrl: varchar("tiktok_url", { length: 255 }).default(""),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});

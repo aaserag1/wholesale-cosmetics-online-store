@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { users, verificationCodes } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { verifyPassword, createToken } from "@/lib/auth";
+import { verifyPassword, createToken, getAuthCookieOptions } from "@/lib/auth";
 import { loginSchema } from "@/lib/validations";
 import { sendVerificationEmail } from "@/lib/email";
 
@@ -73,6 +73,8 @@ export async function POST(req: NextRequest) {
     });
 
     const res = NextResponse.json({
+      success: true,
+      token,
       user: {
         id: user.id,
         name: user.name,
@@ -82,13 +84,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    res.cookies.set("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 7,
-      path: "/",
-    });
+    res.cookies.set("token", token, getAuthCookieOptions(req));
 
     return res;
   } catch (e) {

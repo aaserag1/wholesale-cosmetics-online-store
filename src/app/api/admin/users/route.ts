@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { users, orders } from "@/db/schema";
+import { users, orders, cartItems, orderItems, verificationCodes } from "@/db/schema";
 import { eq, desc, sql, and, ne } from "drizzle-orm";
-import { getCurrentUser, hashPassword, createToken } from "@/lib/auth";
+import { getCurrentUser, hashPassword, createToken, getAuthCookieOptions } from "@/lib/auth";
 
 export async function GET() {
   try {
@@ -173,18 +173,76 @@ export async function PATCH(req: NextRequest) {
         email: updatedUser.email,
         isAdmin: updatedUser.isAdmin,
       });
-      res.cookies.set("token", newToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 60 * 60 * 24 * 7,
-        path: "/",
-      });
+      res.cookies.set("token", newToken, getAuthCookieOptions(req));
     }
 
     return res;
   } catch (e) {
     console.error("Admin users PATCH error:", e);
     return NextResponse.json({ error: "فشل تحديث المستخدم" }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const admin = await getCurrentUser(req);
+    if (!admin || !admin.isAdmin) {
+      return NextResponse.json({ error: "غير مصرح لك بالوصول" }, { status: 403 });
+    }
+
+    const { searchParams } = new URL(req.url);
+    const idParam = searchParams.get("id");
+    const targetUserId = idParam ? parseInt(idParam, 10) : null;
+
+    if (!targetUserId || isNaN(targetUserId)) {
+      return NextResponse.json({ error: "معرف المستخدم غير صالح" }, { status: 400 });
+    }
+
+    if (targetUserId === admin.userId) {
+      return NextResponse.json(
+        { error: "لا يمكنك حذف حساب المسؤول الحالي الذي تستخدمه لتسجيل الدخول" },
+        { status: 400 }
+      );
+    }
+
+    const [targetUser] = await db
+      .select()
+      .from(users)
+      .where(eq(users.id, targetUserId));
+
+    if (!targetUser) {
+      return NextResponse.json({ error: "المستخدم غير موجود" }, { status: 404 });
+    }
+
+    // 1. Delete cart items
+    await db.delete(cartItems).where(eq(cartItems.userId, targetUserId));
+
+    // 2. Find user orders
+    const userOrders = await db
+      .select({ id: orders.id })
+      .from(orders)
+      .where(eq(orders.userId, targetUserId));
+
+    if (userOrders.length > 0) {
+      const orderIds = userOrders.map((o) => o.id);
+      for (const orderId of orderIds) {
+        await db.delete(orderItems).where(eq(orderItems.orderId, orderId));
+      }
+      await db.delete(orders).where(eq(orders.userId, targetUserId));
+    }
+
+    // 3. Delete any verification codes
+    await db.delete(verificationCodes).where(eq(verificationCodes.email, targetUser.email));
+
+    // 4. Delete user
+    await db.delete(users).where(eq(users.id, targetUserId));
+
+    return NextResponse.json({
+      success: true,
+      message: `تم حذف العميل "${targetUser.name}" وجميع بياناته بنجاح`,
+    });
+  } catch (e) {
+    console.error("Admin user DELETE error:", e);
+    return NextResponse.json({ error: "حدث خطأ أثناء حذف العميل" }, { status: 500 });
   }
 }

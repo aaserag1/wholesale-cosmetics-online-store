@@ -48,6 +48,36 @@ export default function AdminCustomersTab({
   const [editError, setEditError] = useState("");
   const [editSuccess, setEditSuccess] = useState("");
 
+  // Delete User Modal State
+  const [deletingUser, setDeletingUser] = useState<User | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
+
+  const handleConfirmDelete = async () => {
+    if (!deletingUser) return;
+    setIsDeleting(true);
+    setDeleteError("");
+    try {
+      const res = await fetch(`/api/admin/users?id=${deletingUser.id}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setDeleteError(data.error || "فشل حذف العميل");
+      } else {
+        await onRefresh();
+        setDeletingUser(null);
+        if (editingUser?.id === deletingUser.id) {
+          setEditingUser(null);
+        }
+      }
+    } catch {
+      setDeleteError("حدث خطأ في الاتصال بالخادم");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const filteredUsers = users.filter((u) => {
     const q = search.toLowerCase().trim();
     if (!q) return true;
@@ -284,6 +314,16 @@ export default function AdminCustomersTab({
 
                         {u.id !== currentAdminId && (
                           <button
+                            onClick={() => setDeletingUser(u)}
+                            className="bg-red-50 hover:bg-red-100 text-red-600 px-2.5 py-1 rounded-xl text-[11px] font-bold transition-all flex items-center gap-1"
+                            title="حذف العميل نهائياً"
+                          >
+                            <span>🗑️</span> حذف
+                          </button>
+                        )}
+
+                        {u.id !== currentAdminId && (
+                          <button
                             onClick={() => handleToggleAdmin(u)}
                             disabled={updatingUserId === u.id}
                             className={`px-2.5 py-1 rounded-xl text-[11px] font-bold transition-all ${
@@ -483,23 +523,92 @@ export default function AdminCustomersTab({
                 </label>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
-                <button
-                  type="button"
-                  onClick={() => setEditingUser(null)}
-                  className="px-4 py-2 border border-gray-200 text-gray-600 hover:bg-gray-50 rounded-xl text-xs font-bold transition-all"
-                >
-                  إلغاء
-                </button>
-                <button
-                  type="submit"
-                  disabled={savingEdit}
-                  className="bg-gradient-to-l from-primary to-secondary text-white px-6 py-2 rounded-xl text-xs font-bold shadow-md hover:shadow-lg transition-all disabled:opacity-50"
-                >
-                  {savingEdit ? "جاري الحفظ..." : "💾 حفظ التعديلات"}
-                </button>
+              <div className="flex items-center justify-between gap-3 pt-4 border-t border-gray-100">
+                {editingUser.id !== currentAdminId ? (
+                  <button
+                    type="button"
+                    onClick={() => setDeletingUser(editingUser)}
+                    className="text-red-600 hover:text-red-700 hover:bg-red-50 px-3 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5"
+                  >
+                    <span>🗑️</span> حذف هذا العميل
+                  </button>
+                ) : <div />}
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditingUser(null)}
+                    className="px-4 py-2 border border-gray-200 text-gray-600 hover:bg-gray-50 rounded-xl text-xs font-bold transition-all"
+                  >
+                    إلغاء
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={savingEdit}
+                    className="bg-gradient-to-l from-primary to-secondary text-white px-6 py-2 rounded-xl text-xs font-bold shadow-md hover:shadow-lg transition-all disabled:opacity-50"
+                  >
+                    {savingEdit ? "جاري الحفظ..." : "💾 حفظ التعديلات"}
+                  </button>
+                </div>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete User Confirmation Modal */}
+      {deletingUser && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl border border-gray-100 animate-scale-up text-center">
+            <div className="w-16 h-16 bg-red-100 text-red-600 rounded-3xl flex items-center justify-center text-3xl mx-auto mb-4">
+              ⚠️
+            </div>
+
+            <h3 className="text-xl font-black text-gray-900 mb-2">
+              تأكيد حذف العميل
+            </h3>
+
+            <p className="text-gray-600 text-sm mb-4 leading-relaxed">
+              هل أنت متأكد من رغبتك في حذف حساب العميل{" "}
+              <b className="text-gray-900">"{deletingUser.name}"</b> (
+              <span className="font-mono text-xs">{deletingUser.email}</span>)؟
+            </p>
+
+            <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-2xl p-3 text-xs mb-6 text-right space-y-1">
+              <p className="font-bold flex items-center gap-1">
+                <span>⚠️</span> سيؤدي هذا الإجراء إلى:
+              </p>
+              <ul className="list-disc list-inside space-y-0.5 text-amber-900/80 mr-2">
+                <li>حذف الحساب نهائياً من قاعدة البيانات</li>
+                <li>إلغاء سلة المشتريات الخاصة به</li>
+                <li>حذف أرشيف طلبات هذا العميل ({deletingUser.orderCount} طلب)</li>
+              </ul>
+            </div>
+
+            {deleteError && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-2xl mb-4 text-xs font-bold flex items-center gap-2 text-right">
+                <span>⚠️</span> {deleteError}
+              </div>
+            )}
+
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setDeletingUser(null)}
+                disabled={isDeleting}
+                className="flex-1 py-3 border border-gray-200 text-gray-700 hover:bg-gray-50 rounded-2xl text-sm font-bold transition-all disabled:opacity-50"
+              >
+                تراجع
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                disabled={isDeleting}
+                className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white rounded-2xl text-sm font-bold shadow-lg shadow-red-200 transition-all disabled:opacity-50 active:scale-95"
+              >
+                {isDeleting ? "جاري الحذف..." : "نعم، احذف نهائياً"}
+              </button>
+            </div>
           </div>
         </div>
       )}

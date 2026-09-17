@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { users, verificationCodes } from "@/db/schema";
 import { eq, and, gt } from "drizzle-orm";
-import { createToken } from "@/lib/auth";
+import { createToken, getAuthCookieOptions } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
   try {
@@ -11,43 +11,36 @@ export async function POST(req: NextRequest) {
 
     if (!email || !code) {
       return NextResponse.json(
-        { error: "يرجى إدخال البريد الإلكتروني ورمز التحقق" },
+        { error: "البريد الإلكتروني ورمز التأكيد مطلوبان" },
         { status: 400 }
       );
     }
 
-    const cleanEmail = String(email).trim().toLowerCase();
-    const cleanCode = String(code).trim();
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanCode = code.trim();
 
-    // Check if code matches and has not expired
-    const [validCode] = await db
+    // Check verification code in DB
+    const [record] = await db
       .select()
       .from(verificationCodes)
       .where(
         and(
           eq(verificationCodes.email, cleanEmail),
-          eq(verificationCodes.code, cleanCode),
-          gt(verificationCodes.expiresAt, new Date())
+          eq(verificationCodes.code, cleanCode)
         )
       );
 
-    if (!validCode) {
+    if (!record) {
       return NextResponse.json(
-        { error: "رمز التحقق غير صحيح أو انتهت صلاحيته (15 دقيقة)" },
+        { error: "رمز التأكيد غير صحيح أو غير موجود" },
         { status: 400 }
       );
     }
 
-    // Find the user
-    const [user] = await db
-      .select()
-      .from(users)
-      .where(eq(users.email, cleanEmail));
-
-    if (!user) {
+    if (new Date() > new Date(record.expiresAt)) {
       return NextResponse.json(
-        { error: "الحساب غير موجود، يرجى التسجيل أولاً" },
-        { status: 404 }
+        { error: "عذراً، لقد انتهت صلاحية هذا الرمز. يرجى طلب رمز جديد." },
+        { status: 400 }
       );
     }
 
@@ -55,8 +48,15 @@ export async function POST(req: NextRequest) {
     const [verifiedUser] = await db
       .update(users)
       .set({ isVerified: true })
-      .where(eq(users.id, user.id))
+      .where(eq(users.email, cleanEmail))
       .returning();
+
+    if (!verifiedUser) {
+      return NextResponse.json(
+        { error: "لم يتم العثور على حساب بهذا البريد الإلكتروني" },
+        { status: 404 }
+      );
+    }
 
     // Clean up verification codes for this email
     await db.delete(verificationCodes).where(eq(verificationCodes.email, cleanEmail));
@@ -71,6 +71,7 @@ export async function POST(req: NextRequest) {
     const res = NextResponse.json({
       success: true,
       message: "تهانينا! تم تفعيل حسابك التجاري بنجاح.",
+      token,
       user: {
         id: verifiedUser.id,
         name: verifiedUser.name,
@@ -80,13 +81,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    res.cookies.set("token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 7,
-      path: "/",
-    });
+    res.cookies.set("token", token, getAuthCookieOptions(req));
 
     return res;
   } catch (e) {

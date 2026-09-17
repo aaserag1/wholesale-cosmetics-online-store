@@ -3,23 +3,76 @@
 import Link from "next/link";
 import { useCart } from "./CartContext";
 import { useAuth } from "./AuthContext";
+import { useSettings } from "./SettingsContext";
 import { useState } from "react";
 
 export default function Navbar() {
   const { itemCount } = useCart();
   const { user, logout } = useAuth();
+  const { settings } = useSettings();
   const [menuOpen, setMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   return (
-    <nav className="glass sticky top-0 z-50 border-b border-pink-100 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-2">
-            <span className="text-2xl">💄</span>
-            <span className="text-xl font-bold gradient-text">BeautyMart</span>
-          </Link>
+    <>
+      {/* Top Announcement & Quick Contact Bar */}
+      <div className="bg-gradient-to-l from-gray-900 via-gray-800 to-gray-900 text-white text-xs py-1.5 px-4 shadow-sm border-b border-white/5">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+          <div className="flex items-center gap-2 truncate">
+            {settings.announcementEnabled && settings.announcementText ? (
+              <span className="truncate font-medium flex items-center gap-1.5 text-pink-200">
+                <span className="animate-pulse">🔥</span>
+                {settings.announcementText}
+              </span>
+            ) : (
+              <span className="truncate text-gray-300 font-medium">
+                🌸 {settings.tagline || "المنصة الأولى لتوريد مستحضرات التجميل بالجملة"}
+              </span>
+            )}
+          </div>
+
+          <div className="hidden sm:flex items-center gap-4 shrink-0 text-[11px] font-bold">
+            {settings.contactPhone && (
+              <a
+                href={`tel:${settings.contactPhone}`}
+                className="flex items-center gap-1 text-gray-200 hover:text-white transition-colors"
+                dir="ltr"
+              >
+                <span>📞</span>
+                <span>{settings.contactPhone}</span>
+              </a>
+            )}
+            {settings.contactWhatsapp && (
+              <a
+                href={`https://wa.me/${settings.contactWhatsapp}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 text-green-400 hover:text-green-300 transition-colors"
+                dir="ltr"
+              >
+                <span>💬</span>
+                <span>واتساب الإدارة</span>
+              </a>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <nav className="glass sticky top-0 z-50 border-b border-pink-100 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex items-center justify-between h-16">
+            {/* Logo */}
+            <Link href="/" className="flex items-center gap-2">
+              <span className="text-2xl">💄</span>
+              <div className="flex flex-col">
+                <span className="text-xl font-black gradient-text leading-tight">
+                  {settings.siteNameAr || settings.siteName}
+                </span>
+                <span className="text-[10px] text-gray-400 font-bold hidden sm:inline -mt-0.5">
+                  B2B توريد جملة
+                </span>
+              </div>
+            </Link>
 
           {/* Desktop Nav */}
           <div className="hidden md:flex items-center gap-6">
@@ -235,5 +288,6 @@ export default function Navbar() {
         )}
       </div>
     </nav>
+    </>
   );
 }

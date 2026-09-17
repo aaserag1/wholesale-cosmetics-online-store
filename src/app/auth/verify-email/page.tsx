@@ -55,11 +55,18 @@ function VerifyEmailContent() {
       if (!res.ok) {
         setError(data.error || "رمز التحقق غير صحيح أو انتهت صلاحيته");
       } else {
+        if (data.token && typeof window !== "undefined") {
+          try {
+            localStorage.setItem("beautymart_token", data.token);
+          } catch {
+            // ignore
+          }
+        }
         setSuccess("🎉 " + data.message);
         await refreshUser();
         setTimeout(() => {
-          router.push("/account/profile");
-        }, 1500);
+          router.push("/");
+        }, 1200);
       }
     } catch {
       setError("حدث خطأ في الاتصال بالخادم");

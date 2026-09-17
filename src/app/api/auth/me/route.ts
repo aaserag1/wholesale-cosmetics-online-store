@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentUser, hashPassword, verifyPassword, createToken } from "@/lib/auth";
+import { getCurrentUser, hashPassword, verifyPassword, createToken, getAuthCookieOptions } from "@/lib/auth";
 import { db } from "@/db";
 import { users } from "@/db/schema";
 import { eq, and, ne } from "drizzle-orm";
@@ -17,9 +17,9 @@ const updateProfileSchema = z.object({
   newPassword: z.string().min(6, "كلمة المرور الجديدة يجب ألا تقل عن 6 أحرف").optional(),
 });
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    const payload = await getCurrentUser();
+    const payload = await getCurrentUser(req);
     if (!payload) {
       return NextResponse.json({ user: null }, { status: 401 });
     }
@@ -148,13 +148,7 @@ export async function PATCH(req: NextRequest) {
         email: updatedUser.email,
         isAdmin: updatedUser.isAdmin,
       });
-      res.cookies.set("token", newToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 60 * 60 * 24 * 7,
-        path: "/",
-      });
+      res.cookies.set("token", newToken, getAuthCookieOptions(req));
     }
 
     return res;

@@ -69,15 +69,49 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
+const TOKEN_STORAGE_KEY = "beautymart_token";
+
+function getStoredToken(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return localStorage.getItem(TOKEN_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function setStoredToken(token: string | null) {
+  if (typeof window === "undefined") return;
+  try {
+    if (token) {
+      localStorage.setItem(TOKEN_STORAGE_KEY, token);
+    } else {
+      localStorage.removeItem(TOKEN_STORAGE_KEY);
+    }
+  } catch {
+    // ignore
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   const refreshUser = useCallback(async () => {
     try {
-      const res = await fetch("/api/auth/me");
+      const token = getStoredToken();
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+
+      const res = await fetch("/api/auth/me", { headers });
       const data = await res.json();
-      setUser(data.user);
+      if (data?.user) {
+        setUser(data.user);
+      } else {
+        setUser(null);
+      }
     } catch {
       setUser(null);
     } finally {
@@ -104,6 +138,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         sentViaSmtp: data.sentViaSmtp,
         devCode: data.devCode,
       };
+    }
+    if (data.token) {
+      setStoredToken(data.token);
+    }
+    if (data.user) {
+      setUser(data.user);
     }
     await refreshUser();
     return {};
@@ -161,8 +201,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = async () => {
-    await fetch("/api/auth/logout", { method: "POST" });
-    setUser(null);
+    try {
+      const token = getStoredToken();
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+      await fetch("/api/auth/logout", { method: "POST", headers });
+    } catch {
+      // ignore
+    } finally {
+      setStoredToken(null);
+      setUser(null);
+    }
   };
 
   return (

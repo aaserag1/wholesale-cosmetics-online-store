@@ -1,8 +1,14 @@
-﻿"use client";
+"use client";
+
+import { useSettings } from "./SettingsContext";
 
 export default function WhatsAppButton() {
-  const whatsappNumber = "201000000000"; // Can be configured
-  const defaultMessage = encodeURIComponent("مرحباً بيوتي مارت، أود الاستفسار عن عروض وتوريد مستحضرات التجميل بالجملة للصالون/المتجر.");
+  const { settings } = useSettings();
+  const rawNumber = settings.contactWhatsapp || "201000000000";
+  // Strip any non-digit chars
+  const whatsappNumber = rawNumber.replace(/\D/g, "");
+  const siteTitle = settings.siteNameAr || settings.siteName || "بيوتي مارت";
+  const defaultMessage = encodeURIComponent(`مرحباً ${siteTitle}، أود الاستفسار عن عروض وتوريد مستحضرات التجميل بالجملة للصالون/المتجر.`);
 
   return (
     <a

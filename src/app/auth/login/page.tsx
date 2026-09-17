@@ -11,11 +11,13 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setSuccess("");
     setLoading(true);
     const result = await login(email, password);
     if (result.error) {
@@ -31,7 +33,10 @@ export default function LoginPage() {
         }, 1200);
       }
     } else {
-      router.push("/");
+      setSuccess("✅ تم تسجيل الدخول بنجاح! جاري تحويلك...");
+      setTimeout(() => {
+        window.location.href = "/";
+      }, 500);
     }
   };
 
@@ -48,6 +53,12 @@ export default function LoginPage() {
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-6 text-sm">
               {error}
+            </div>
+          )}
+
+          {success && (
+            <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl mb-6 text-sm font-bold flex items-center gap-2">
+              <span>🎉</span> {success}
             </div>
           )}
 

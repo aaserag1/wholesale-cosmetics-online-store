@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/components/AuthContext";
@@ -8,10 +8,13 @@ import AdminOrdersTab from "@/components/admin/AdminOrdersTab";
 import AdminProductsTab from "@/components/admin/AdminProductsTab";
 import AdminCustomersTab from "@/components/admin/AdminCustomersTab";
 import AdminCategoriesTab from "@/components/admin/AdminCategoriesTab";
+import AdminSettingsTab from "@/components/admin/AdminSettingsTab";
 
 export default function AdminPage() {
   const { user, loading: authLoading } = useAuth();
-  const [activeTab, setActiveTab] = useState<"analytics" | "orders" | "products" | "customers" | "categories">("analytics");
+  const [activeTab, setActiveTab] = useState<
+    "analytics" | "orders" | "products" | "customers" | "categories" | "settings"
+  >("analytics");
 
   const [orders, setOrders] = useState<any[]>([]);
   const [products, setProducts] = useState<any[]>([]);
@@ -186,6 +189,17 @@ export default function AdminPage() {
         >
           <span>📁</span> الأقسام والتصنيفات ({categories.length})
         </button>
+
+        <button
+          onClick={() => setActiveTab("settings")}
+          className={`px-4 py-2.5 rounded-2xl font-black text-xs transition-all shrink-0 flex items-center gap-1.5 ${
+            activeTab === "settings"
+              ? "bg-gray-900 text-white shadow-md"
+              : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
+          }`}
+        >
+          <span>⚙️</span> إعدادات المتجر العامة
+        </button>
       </div>
 
       {/* Tab Contents */}
@@ -222,6 +236,10 @@ export default function AdminPage() {
           categories={categories}
           onRefresh={fetchAllData}
         />
+      )}
+
+      {activeTab === "settings" && (
+        <AdminSettingsTab />
       )}
     </div>
   );
