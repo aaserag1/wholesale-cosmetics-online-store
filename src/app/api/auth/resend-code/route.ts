@@ -67,11 +67,15 @@ export async function POST(req: NextRequest) {
     });
 
     // Send email
-    await sendVerificationEmail(cleanEmail, newCode, user.name);
+    const mailResult = await sendVerificationEmail(cleanEmail, newCode, user.name);
 
     return NextResponse.json({
       success: true,
-      message: "تم إرسال رمز تحقق جديد إلى بريدك الإلكتروني بنجاح.",
+      sentViaSmtp: mailResult.sentViaSmtp,
+      ...(mailResult.sentViaSmtp ? {} : { devCode: newCode }),
+      message: mailResult.sentViaSmtp
+        ? "تم إرسال رمز تحقق جديد إلى بريدك الإلكتروني بنجاح."
+        : "تم توليد رمز تحقق جديد (خادم SMTP غير مهيأ بعد).",
     });
   } catch (e) {
     console.error("Resend code error:", e);

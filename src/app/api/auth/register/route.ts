@@ -79,13 +79,17 @@ export async function POST(req: NextRequest) {
     });
 
     // Send verification email
-    await sendVerificationEmail(cleanEmail, code, name);
+    const mailResult = await sendVerificationEmail(cleanEmail, code, name);
 
     return NextResponse.json({
       success: true,
       requiresVerification: true,
       email: cleanEmail,
-      message: "تم إرسال رمز التحقق المكون من 6 أرقام إلى بريدك الإلكتروني بنجاح.",
+      sentViaSmtp: mailResult.sentViaSmtp,
+      ...(mailResult.sentViaSmtp ? {} : { devCode: code }),
+      message: mailResult.sentViaSmtp
+        ? "تم إرسال رمز التحقق المكون من 6 أرقام إلى بريدك الإلكتروني بنجاح."
+        : "تم تسجيل الحساب. خادم إرسال البريد (SMTP) غير مهيأ بعد على السيرفر.",
     });
   } catch (e) {
     console.error("Register error:", e);

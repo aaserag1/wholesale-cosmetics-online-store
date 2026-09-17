@@ -17,12 +17,13 @@ function VerifyEmailContent() {
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
   const [countdown, setCountdown] = useState(60);
+  const [devCode, setDevCode] = useState("");
 
   useEffect(() => {
     const qEmail = searchParams.get("email");
-    if (qEmail) {
-      setEmail(qEmail);
-    }
+    const qCode = searchParams.get("devCode");
+    if (qEmail) setEmail(qEmail);
+    if (qCode) setDevCode(qCode);
   }, [searchParams]);
 
   useEffect(() => {
@@ -85,6 +86,9 @@ function VerifyEmailContent() {
         setError(data.error || "فشل إعادة إرسال الرمز");
       } else {
         setSuccess("✓ " + data.message);
+        if (data.devCode) {
+          setDevCode(data.devCode);
+        }
         setCountdown(60);
       }
     } catch {
@@ -119,6 +123,27 @@ function VerifyEmailContent() {
           {success && (
             <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-2xl mb-5 text-xs font-bold flex items-center gap-2">
               <span>✓</span> {success}
+            </div>
+          )}
+
+          {devCode && (
+            <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 mb-5 text-amber-900 text-xs leading-relaxed">
+              <div className="flex items-center gap-2 font-bold mb-1 text-amber-800">
+                <span>🔔</span> تنبيه بيئة التشغيل التجريبية
+              </div>
+              <p className="mb-2 text-amber-700">
+                خادم إرسال البريد الحقيقي (SMTP) غير مرتبط بعد على السيرفر، لذلك رمز التحقق الخاص بحسابك هو:
+              </p>
+              <div className="flex items-center justify-between bg-white border border-amber-300 rounded-xl px-3 py-2">
+                <span className="font-mono font-black text-lg text-primary tracking-widest">{devCode}</span>
+                <button
+                  type="button"
+                  onClick={() => setCode(devCode)}
+                  className="bg-amber-100 hover:bg-amber-200 text-amber-900 font-bold px-3 py-1 rounded-lg text-xs transition-colors"
+                >
+                  كتابة الرمز تلقائياً 📋
+                </button>
+              </div>
             </div>
           )}
 

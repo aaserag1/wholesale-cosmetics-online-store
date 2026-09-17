@@ -30,7 +30,11 @@ export default function RegisterPage() {
       setError(result.error);
       setLoading(false);
     } else if (result.requiresVerification) {
-      router.push(`/auth/verify-email?email=${encodeURIComponent(result.email || form.email)}`);
+      const q = new URLSearchParams({
+        email: result.email || form.email,
+        ...(result.devCode ? { devCode: result.devCode } : {}),
+      });
+      router.push(`/auth/verify-email?${q.toString()}`);
     } else {
       router.push("/");
     }

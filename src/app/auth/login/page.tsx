@@ -23,7 +23,11 @@ export default function LoginPage() {
       setLoading(false);
       if (result.requiresVerification) {
         setTimeout(() => {
-          router.push(`/auth/verify-email?email=${encodeURIComponent(result.email || email)}`);
+          const q = new URLSearchParams({
+            email: result.email || email,
+            ...(result.devCode ? { devCode: result.devCode } : {}),
+          });
+          router.push(`/auth/verify-email?${q.toString()}`);
         }, 1200);
       }
     } else {

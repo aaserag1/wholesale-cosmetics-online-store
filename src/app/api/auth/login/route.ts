@@ -52,13 +52,15 @@ export async function POST(req: NextRequest) {
         expiresAt,
       });
 
-      await sendVerificationEmail(cleanEmail, code, user.name);
+      const mailResult = await sendVerificationEmail(cleanEmail, code, user.name);
 
       return NextResponse.json(
         {
-          error: "حسابك التجاري غير مفعل بعد. تم إرسال رمز تحقق جديد إلى بريدك الإلكتروني.",
+          error: "حسابك التجاري غير مفعل بعد. يرجى إدخال رمز التحقق لتفعيله.",
           requiresVerification: true,
           email: cleanEmail,
+          sentViaSmtp: mailResult.sentViaSmtp,
+          ...(mailResult.sentViaSmtp ? {} : { devCode: code }),
         },
         { status: 403 }
       );

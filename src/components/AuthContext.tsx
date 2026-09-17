@@ -29,7 +29,13 @@ interface AuthContextType {
   login: (
     email: string,
     password: string
-  ) => Promise<{ error?: string; requiresVerification?: boolean; email?: string }>;
+  ) => Promise<{
+    error?: string;
+    requiresVerification?: boolean;
+    email?: string;
+    sentViaSmtp?: boolean;
+    devCode?: string;
+  }>;
   register: (data: {
     name: string;
     email: string;
@@ -39,7 +45,13 @@ interface AuthContextType {
     city?: string;
     businessName?: string;
     taxId?: string;
-  }) => Promise<{ error?: string; requiresVerification?: boolean; email?: string }>;
+  }) => Promise<{
+    error?: string;
+    requiresVerification?: boolean;
+    email?: string;
+    sentViaSmtp?: boolean;
+    devCode?: string;
+  }>;
   updateProfile: (data: {
     name?: string;
     email?: string;
@@ -89,6 +101,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         error: data.error,
         requiresVerification: data.requiresVerification,
         email: data.email,
+        sentViaSmtp: data.sentViaSmtp,
+        devCode: data.devCode,
       };
     }
     await refreshUser();
@@ -113,7 +127,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const data = await res.json();
     if (!res.ok) return { error: data.error };
     if (data.requiresVerification) {
-      return { requiresVerification: true, email: data.email };
+      return {
+        requiresVerification: true,
+        email: data.email,
+        sentViaSmtp: data.sentViaSmtp,
+        devCode: data.devCode,
+      };
     }
     await refreshUser();
     return {};
