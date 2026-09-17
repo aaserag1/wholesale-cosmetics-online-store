@@ -1,0 +1,35 @@
+﻿services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: beautymart-web
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3050:3000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://postgres:postgrespassword@db:5432/beauty_store
+      - JWT_SECRET=beautymart-b2b-production-secret-2026
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:16-alpine
+    container_name: beautymart-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgrespassword
+      POSTGRES_DB: beauty_store
+    volumes:
+      - beautymart_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d beauty_store"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  beautymart_postgres_data:
