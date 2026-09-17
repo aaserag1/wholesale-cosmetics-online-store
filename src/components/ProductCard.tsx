@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCart } from "./CartContext";
+import { useWishlist } from "./WishlistContext";
 import { useState } from "react";
 
 interface Product {
@@ -27,8 +28,10 @@ interface Product {
 
 export default function ProductCard({ product }: { product: Product }) {
   const { addToCart } = useCart();
+  const { isInWishlist, toggleWishlist } = useWishlist();
   const [adding, setAdding] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
+  const inWishlist = isInWishlist(product.id);
 
   const moq = product.minOrderQuantity || 6;
 
@@ -79,6 +82,20 @@ export default function ProductCard({ product }: { product: Product }) {
               </div>
             )}
           </div>
+          {/* Wishlist Button */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              toggleWishlist(product.id);
+            }}
+            title={inWishlist ? "إزالة من المفضلة" : "إضافة إلى المفضلة"}
+            className="absolute top-3 left-3 z-10 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm shadow-sm flex items-center justify-center hover:scale-110 active:scale-90 transition-all text-sm"
+          >
+            {inWishlist ? "❤️" : "🤍"}
+          </button>
+
           {discount > 0 && (
             <span className="absolute top-3 right-3 bg-red-500 text-white text-xs font-bold px-2.5 py-1 rounded-full shadow-sm">
               {discount}%-
@@ -90,7 +107,7 @@ export default function ProductCard({ product }: { product: Product }) {
             </span>
           )}
           {product.stock <= 20 && product.stock > 0 && (
-            <span className="absolute top-3 left-3 bg-amber-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+            <span className="absolute top-12 left-3 bg-amber-500 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow-sm">
               باقي {product.stock}
             </span>
           )}

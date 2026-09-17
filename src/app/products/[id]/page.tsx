@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useCart } from "@/components/CartContext";
+import { useWishlist } from "@/components/WishlistContext";
 
 interface Product {
   id: number;
@@ -30,6 +31,7 @@ interface Product {
 export default function ProductDetailPage() {
   const params = useParams();
   const { addToCart } = useCart();
+  const { isInWishlist, toggleWishlist } = useWishlist();
   const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(6);
@@ -134,6 +136,16 @@ export default function ProductDetailPage() {
                 🧴
               </div>
             )}
+            {/* Wishlist Button */}
+            <button
+              type="button"
+              onClick={() => toggleWishlist(product.id)}
+              title={isInWishlist(product.id) ? "إزالة من المفضلة" : "إضافة إلى المفضلة"}
+              className="absolute top-4 left-4 z-10 w-11 h-11 rounded-full bg-white/90 backdrop-blur-md shadow-md flex items-center justify-center hover:scale-110 active:scale-95 transition-all text-xl"
+            >
+              {isInWishlist(product.id) ? "❤️" : "🤍"}
+            </button>
+
             {discount > 0 && (
               <span className="absolute top-4 right-4 bg-red-500 text-white font-bold px-4 py-1.5 rounded-full text-sm shadow">
                 خصم {discount}%

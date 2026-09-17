@@ -98,19 +98,33 @@ export default function Navbar() {
                 {userMenuOpen && (
                   <div className="absolute left-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-2 animate-slide-down">
                     <Link
-                      href="/account/orders"
-                      className="block px-4 py-2 text-gray-700 hover:bg-pink-50 hover:text-primary transition-colors"
+                      href="/account/profile"
+                      className="block px-4 py-2 text-gray-700 hover:bg-pink-50 hover:text-primary transition-colors text-sm font-semibold"
                       onClick={() => setUserMenuOpen(false)}
                     >
-                      📦 أوردراتي
+                      🏢 الملف الشخصي للتاجر
+                    </Link>
+                    <Link
+                      href="/account/orders"
+                      className="block px-4 py-2 text-gray-700 hover:bg-pink-50 hover:text-primary transition-colors text-sm font-semibold"
+                      onClick={() => setUserMenuOpen(false)}
+                    >
+                      📦 سجل الطلبات
+                    </Link>
+                    <Link
+                      href="/account/wishlist"
+                      className="block px-4 py-2 text-gray-700 hover:bg-pink-50 hover:text-primary transition-colors text-sm font-semibold"
+                      onClick={() => setUserMenuOpen(false)}
+                    >
+                      ❤️ قائمة المفضلة
                     </Link>
                     {user.isAdmin && (
                       <Link
                         href="/admin"
-                        className="block px-4 py-2 text-gray-700 hover:bg-pink-50 hover:text-primary transition-colors"
+                        className="block px-4 py-2 text-purple-700 hover:bg-purple-50 font-bold transition-colors text-sm"
                         onClick={() => setUserMenuOpen(false)}
                       >
-                        ⚙️ لوحة التحكم
+                        ⚙️ لوحة تحكم الإدارة
                       </Link>
                     )}
                     <hr className="my-1" />
@@ -184,13 +198,38 @@ export default function Navbar() {
               🛍️ المنتجات
             </Link>
             {user && (
-              <Link
-                href="/account/orders"
-                className="block py-2 text-gray-700 hover:text-primary"
-                onClick={() => setMenuOpen(false)}
-              >
-                📦 أوردراتي
-              </Link>
+              <>
+                <Link
+                  href="/account/profile"
+                  className="block py-2 text-gray-700 hover:text-primary font-medium"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  🏢 الملف الشخصي للتاجر
+                </Link>
+                <Link
+                  href="/account/orders"
+                  className="block py-2 text-gray-700 hover:text-primary font-medium"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  📦 سجل الطلبات
+                </Link>
+                <Link
+                  href="/account/wishlist"
+                  className="block py-2 text-gray-700 hover:text-primary font-medium"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  ❤️ قائمة المفضلة
+                </Link>
+                {user.isAdmin && (
+                  <Link
+                    href="/admin"
+                    className="block py-2 text-purple-700 font-bold hover:text-purple-900"
+                    onClick={() => setMenuOpen(false)}
+                  >
+                    ⚙️ لوحة تحكم الإدارة
+                  </Link>
+                )}
+              </>
             )}
           </div>
         )}

@@ -13,7 +13,13 @@ interface User {
   id: number;
   name: string;
   email: string;
+  phone?: string | null;
+  address?: string | null;
+  city?: string | null;
+  businessName?: string | null;
+  taxId?: string | null;
   isAdmin: boolean;
+  createdAt?: string;
 }
 
 interface AuthContextType {
@@ -30,6 +36,16 @@ interface AuthContextType {
     businessName?: string;
     taxId?: string;
   }) => Promise<{ error?: string }>;
+  updateProfile: (data: {
+    name?: string;
+    phone?: string;
+    address?: string;
+    city?: string;
+    businessName?: string;
+    taxId?: string;
+    currentPassword?: string;
+    newPassword?: string;
+  }) => Promise<{ error?: string; message?: string }>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
 }
@@ -89,6 +105,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return {};
   };
 
+  const updateProfile = async (updateData: {
+    name?: string;
+    phone?: string;
+    address?: string;
+    city?: string;
+    businessName?: string;
+    taxId?: string;
+    currentPassword?: string;
+    newPassword?: string;
+  }) => {
+    const res = await fetch("/api/auth/me", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updateData),
+    });
+    const data = await res.json();
+    if (!res.ok) return { error: data.error };
+    await refreshUser();
+    return { message: data.message };
+  };
+
   const logout = async () => {
     await fetch("/api/auth/logout", { method: "POST" });
     setUser(null);
@@ -96,7 +133,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, loading, login, register, logout, refreshUser }}
+      value={{ user, loading, login, register, updateProfile, logout, refreshUser }}
     >
       {children}
     </AuthContext.Provider>

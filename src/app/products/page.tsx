@@ -43,6 +43,7 @@ function ProductsContent() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState("newest");
+  const [inStockOnly, setInStockOnly] = useState(false);
   const activeCategory = searchParams.get("category") || "";
 
   const fetchProducts = useCallback(async () => {
@@ -51,14 +52,18 @@ function ProductsContent() {
     if (activeCategory) params.set("category", activeCategory);
     if (search) params.set("search", search);
     if (sort) params.set("sort", sort);
-    params.set("limit", "50");
+    params.set("limit", "100");
 
     const res = await fetch(`/api/products?${params}`);
     const data = await res.json();
-    setProducts(data.products || []);
-    setTotal(data.total || 0);
+    let prods = data.products || [];
+    if (inStockOnly) {
+      prods = prods.filter((p: Product) => p.stock > 0);
+    }
+    setProducts(prods);
+    setTotal(prods.length);
     setLoading(false);
-  }, [activeCategory, search, sort]);
+  }, [activeCategory, search, sort, inStockOnly]);
 
   useEffect(() => {
     fetch("/api/categories")
@@ -73,7 +78,7 @@ function ProductsContent() {
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
       {/* Wholesale Banner */}
-      <div className="bg-gradient-to-r from-pink-500/10 via-purple-500/10 to-amber-500/10 border border-pink-200 rounded-2xl p-4 mb-8 flex items-center justify-between flex-wrap gap-3">
+      <div className="bg-gradient-to-r from-pink-500/10 via-purple-500/10 to-amber-500/10 border border-pink-200 rounded-2xl p-4 mb-6 flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
           <span className="text-3xl">🏪</span>
           <div>
@@ -90,30 +95,70 @@ function ProductsContent() {
         </span>
       </div>
 
-      {/* Header with Sort */}
+      {/* Horizontal Category Chips */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-4 mb-6 scrollbar-none">
+        <Link
+          href="/products"
+          className={`px-4 py-2 rounded-2xl text-xs font-bold transition-all shrink-0 ${
+            !activeCategory
+              ? "bg-primary text-white shadow-md shadow-pink-200"
+              : "bg-white text-gray-700 border border-gray-200 hover:bg-gray-50"
+          }`}
+        >
+          ✨ جميع المنتجات
+        </Link>
+        {categories.map((c) => (
+          <Link
+            key={c.id}
+            href={`/products?category=${c.slug}`}
+            className={`px-4 py-2 rounded-2xl text-xs font-bold transition-all shrink-0 flex items-center gap-1.5 ${
+              activeCategory === c.slug
+                ? "bg-primary text-white shadow-md shadow-pink-200"
+                : "bg-white text-gray-700 border border-gray-200 hover:bg-gray-50"
+            }`}
+          >
+            <span>{c.icon || "💄"}</span>
+            <span>{c.nameAr}</span>
+          </Link>
+        ))}
+      </div>
+
+      {/* Header with Sort & Stock Filter */}
       <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-black mb-1">
+          <h1 className="text-2xl md:text-3xl font-black mb-1 text-gray-900">
             {activeCategory
               ? categories.find((c) => c.slug === activeCategory)?.icon + " " +
                 categories.find((c) => c.slug === activeCategory)?.nameAr
               : "🛍️ جميع منتجات الجملة"}
           </h1>
-          <p className="text-gray-500 text-sm">{total} منتج متوفر</p>
+          <p className="text-gray-500 text-xs">{total} منتج متاح للتوريد الفوري</p>
         </div>
 
-        {/* Sort selector */}
-        <div className="flex items-center gap-2">
-          <label className="text-xs font-bold text-gray-500">الترتيب:</label>
-          <select
-            value={sort}
-            onChange={(e) => setSort(e.target.value)}
-            className="bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
-          >
-            <option value="newest">✨ الأحدث</option>
-            <option value="price-asc">💵 السعر: من الأقل للأعلى</option>
-            <option value="price-desc">💎 السعر: من الأعلى للأقل</option>
-          </select>
+        {/* Sort & Quick Filter */}
+        <div className="flex items-center gap-3 flex-wrap">
+          <label className="flex items-center gap-2 text-xs font-bold text-gray-700 bg-white border border-gray-200 px-3 py-2 rounded-xl cursor-pointer hover:bg-gray-50">
+            <input
+              type="checkbox"
+              checked={inStockOnly}
+              onChange={(e) => setInStockOnly(e.target.checked)}
+              className="w-3.5 h-3.5 text-primary rounded"
+            />
+            <span>فقط المتوفر بالمخزن</span>
+          </label>
+
+          <div className="flex items-center gap-2">
+            <label className="text-xs font-bold text-gray-500">الترتيب:</label>
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value)}
+              className="bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
+            >
+              <option value="newest">✨ الأحدث</option>
+              <option value="price-asc">💵 السعر: من الأقل للأعلى</option>
+              <option value="price-desc">💎 السعر: من الأعلى للأقل</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -122,19 +167,19 @@ function ProductsContent() {
         <aside className="lg:w-64 shrink-0">
           {/* Search */}
           <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-4">
-            <h3 className="font-bold text-sm mb-3">🔍 بحث بالاسم</h3>
+            <h3 className="font-bold text-xs mb-3 text-gray-700">🔍 بحث فوري بالاسم</h3>
             <input
               type="text"
-              placeholder="ابحث عن منتج..."
+              placeholder="ابحث عن منتج بالاسم..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full border border-gray-200 rounded-xl px-4 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+              className="w-full border border-gray-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
             />
           </div>
 
-          {/* Categories using Next.js Link (No Full Page Reload!) */}
+          {/* Categories Sidebar List */}
           <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
-            <h3 className="font-bold text-sm mb-3">📂 الأقسام</h3>
+            <h3 className="font-bold text-xs mb-3 text-gray-700">📂 الأقسام والتصنيفات</h3>
             <div className="space-y-1">
               <Link
                 href="/products"
