@@ -22,6 +22,7 @@ async function seed() {
         businessName: "إدارة بيوتي مارت للجملة",
         taxId: "TAX-12345678",
         isAdmin: true,
+        isVerified: true,
       },
       {
         name: "أحمد محمد",
@@ -33,6 +34,7 @@ async function seed() {
         businessName: "صالون ومستحضرات الورد",
         taxId: "CR-98765432",
         isAdmin: false,
+        isVerified: true,
       },
     ])
     .onConflictDoNothing();

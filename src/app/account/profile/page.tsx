@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/components/AuthContext";
@@ -100,6 +100,7 @@ export default function ProfilePage() {
 
     const res = await updateProfile({
       name: form.name,
+      email: form.email,
       phone: form.phone,
       businessName: form.businessName,
       taxId: form.taxId,
@@ -293,14 +294,26 @@ export default function ProfilePage() {
               </div>
 
               <div>
-                <label className="block text-sm font-bold text-gray-700 mb-2">
-                  البريد الإلكتروني (المسجل)
-                </label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-sm font-bold text-gray-700">
+                    البريد الإلكتروني *
+                  </label>
+                  {user.isVerified ? (
+                    <span className="text-[10px] text-green-700 font-bold bg-green-50 border border-green-200 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+                      <span>✓</span> بريد موثق
+                    </span>
+                  ) : (
+                    <span className="text-[10px] text-amber-700 font-bold bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+                      <span>⚠️</span> بانتظار التوثيق
+                    </span>
+                  )}
+                </div>
                 <input
                   type="email"
-                  disabled
+                  required
                   value={form.email}
-                  className="w-full border border-gray-200 bg-gray-50 text-gray-500 rounded-xl px-4 py-3 text-sm cursor-not-allowed"
+                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                 />
               </div>
 

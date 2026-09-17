@@ -32,6 +32,16 @@ export const users = pgTable("users", {
   businessName: varchar("business_name", { length: 255 }),
   taxId: varchar("tax_id", { length: 100 }),
   isAdmin: boolean("is_admin").default(false).notNull(),
+  isVerified: boolean("is_verified").default(false).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+// ── Verification Codes ─────────────────────────────────
+export const verificationCodes = pgTable("verification_codes", {
+  id: serial("id").primaryKey(),
+  email: varchar("email", { length: 255 }).notNull(),
+  code: varchar("code", { length: 10 }).notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

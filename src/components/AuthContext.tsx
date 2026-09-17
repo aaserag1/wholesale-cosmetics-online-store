@@ -19,13 +19,17 @@ interface User {
   businessName?: string | null;
   taxId?: string | null;
   isAdmin: boolean;
+  isVerified?: boolean;
   createdAt?: string;
 }
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => Promise<{ error?: string }>;
+  login: (
+    email: string,
+    password: string
+  ) => Promise<{ error?: string; requiresVerification?: boolean; email?: string }>;
   register: (data: {
     name: string;
     email: string;
@@ -35,9 +39,10 @@ interface AuthContextType {
     city?: string;
     businessName?: string;
     taxId?: string;
-  }) => Promise<{ error?: string }>;
+  }) => Promise<{ error?: string; requiresVerification?: boolean; email?: string }>;
   updateProfile: (data: {
     name?: string;
+    email?: string;
     phone?: string;
     address?: string;
     city?: string;
@@ -79,7 +84,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       body: JSON.stringify({ email, password }),
     });
     const data = await res.json();
-    if (!res.ok) return { error: data.error };
+    if (!res.ok) {
+      return {
+        error: data.error,
+        requiresVerification: data.requiresVerification,
+        email: data.email,
+      };
+    }
     await refreshUser();
     return {};
   };
@@ -101,12 +112,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     const data = await res.json();
     if (!res.ok) return { error: data.error };
+    if (data.requiresVerification) {
+      return { requiresVerification: true, email: data.email };
+    }
     await refreshUser();
     return {};
   };
 
   const updateProfile = async (updateData: {
     name?: string;
+    email?: string;
     phone?: string;
     address?: string;
     city?: string;

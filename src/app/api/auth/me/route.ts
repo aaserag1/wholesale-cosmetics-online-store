@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentUser, hashPassword, verifyPassword } from "@/lib/auth";
+import { getCurrentUser, hashPassword, verifyPassword, createToken } from "@/lib/auth";
 import { db } from "@/db";
 import { users } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and, ne } from "drizzle-orm";
 import { z } from "zod";
 
 const updateProfileSchema = z.object({
   name: z.string().min(2, "الاسم يجب أن يكون حرفين على الأقل").optional(),
+  email: z.string().email("البريد الإلكتروني غير صالح").optional(),
   phone: z.string().optional().nullable(),
   address: z.string().optional().nullable(),
   city: z.string().optional().nullable(),
@@ -33,6 +34,7 @@ export async function GET() {
         businessName: users.businessName,
         taxId: users.taxId,
         isAdmin: users.isAdmin,
+        isVerified: users.isVerified,
         createdAt: users.createdAt,
       })
       .from(users)
@@ -80,6 +82,24 @@ export async function PATCH(req: NextRequest) {
     if (data.businessName !== undefined) updateValues.businessName = data.businessName;
     if (data.taxId !== undefined) updateValues.taxId = data.taxId;
 
+    let emailChanged = false;
+    if (data.email && data.email.toLowerCase().trim() !== existing.email.toLowerCase().trim()) {
+      const cleanEmail = data.email.toLowerCase().trim();
+      const [duplicate] = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(and(eq(users.email, cleanEmail), ne(users.id, payload.userId)));
+
+      if (duplicate) {
+        return NextResponse.json(
+          { error: "البريد الإلكتروني مسجل بالفعل لمستخدم آخر" },
+          { status: 409 }
+        );
+      }
+      updateValues.email = cleanEmail;
+      emailChanged = true;
+    }
+
     // Handle password change
     if (data.newPassword) {
       if (!data.currentPassword) {
@@ -112,13 +132,32 @@ export async function PATCH(req: NextRequest) {
         businessName: users.businessName,
         taxId: users.taxId,
         isAdmin: users.isAdmin,
+        isVerified: users.isVerified,
         createdAt: users.createdAt,
       });
 
-    return NextResponse.json({
+    const res = NextResponse.json({
       message: "تم تحديث البيانات بنجاح",
       user: updatedUser,
     });
+
+    // If email or critical info changed, reissue JWT token
+    if (emailChanged) {
+      const newToken = await createToken({
+        userId: updatedUser.id,
+        email: updatedUser.email,
+        isAdmin: updatedUser.isAdmin,
+      });
+      res.cookies.set("token", newToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 60 * 60 * 24 * 7,
+        path: "/",
+      });
+    }
+
+    return res;
   } catch (e) {
     console.error("Profile update error:", e);
     return NextResponse.json({ error: "فشل تحديث البيانات" }, { status: 500 });

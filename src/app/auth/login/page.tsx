@@ -21,6 +21,11 @@ export default function LoginPage() {
     if (result.error) {
       setError(result.error);
       setLoading(false);
+      if (result.requiresVerification) {
+        setTimeout(() => {
+          router.push(`/auth/verify-email?email=${encodeURIComponent(result.email || email)}`);
+        }, 1200);
+      }
     } else {
       router.push("/");
     }

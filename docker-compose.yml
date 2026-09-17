@@ -11,6 +11,11 @@ services:
       - NODE_ENV=production
       - DATABASE_URL=postgresql://postgres:postgrespassword@db:5432/beauty_store
       - JWT_SECRET=beautymart-b2b-production-secret-2026
+      - SMTP_HOST=${SMTP_HOST:-}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USER=${SMTP_USER:-}
+      - SMTP_PASS=${SMTP_PASS:-}
+      - SMTP_FROM=${SMTP_FROM:-"BeautyMart B2B <noreply@beautymart.com>"}
     depends_on:
       db:
         condition: service_healthy

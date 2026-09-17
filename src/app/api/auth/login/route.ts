@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { users } from "@/db/schema";
+import { users, verificationCodes } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { verifyPassword, createToken } from "@/lib/auth";
 import { loginSchema } from "@/lib/validations";
+import { sendVerificationEmail } from "@/lib/email";
 
 export async function POST(req: NextRequest) {
   try {
@@ -16,11 +17,13 @@ export async function POST(req: NextRequest) {
       );
     }
     const { email, password } = parsed.data;
+    const cleanEmail = email.trim().toLowerCase();
 
     const [user] = await db
       .select()
       .from(users)
-      .where(eq(users.email, email));
+      .where(eq(users.email, cleanEmail));
+
     if (!user) {
       return NextResponse.json(
         { error: "البريد الإلكتروني أو كلمة المرور غير صحيحة" },
@@ -36,6 +39,31 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Safeguard: Check if account email is verified
+    if (!user.isVerified) {
+      // Generate a fresh code and send it immediately
+      const code = Math.floor(100000 + Math.random() * 900000).toString();
+      const expiresAt = new Date(Date.now() + 15 * 60 * 1000);
+
+      await db.delete(verificationCodes).where(eq(verificationCodes.email, cleanEmail));
+      await db.insert(verificationCodes).values({
+        email: cleanEmail,
+        code,
+        expiresAt,
+      });
+
+      await sendVerificationEmail(cleanEmail, code, user.name);
+
+      return NextResponse.json(
+        {
+          error: "حسابك التجاري غير مفعل بعد. تم إرسال رمز تحقق جديد إلى بريدك الإلكتروني.",
+          requiresVerification: true,
+          email: cleanEmail,
+        },
+        { status: 403 }
+      );
+    }
+
     const token = await createToken({
       userId: user.id,
       email: user.email,
@@ -48,8 +76,10 @@ export async function POST(req: NextRequest) {
         name: user.name,
         email: user.email,
         isAdmin: user.isAdmin,
+        businessName: user.businessName,
       },
     });
+
     res.cookies.set("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -57,9 +87,10 @@ export async function POST(req: NextRequest) {
       maxAge: 60 * 60 * 24 * 7,
       path: "/",
     });
+
     return res;
   } catch (e) {
     console.error("Login error:", e);
-    return NextResponse.json({ error: "حدث خطأ في السيرفر" }, { status: 500 });
+    return NextResponse.json({ error: "حدث خطأ في السيرفر أثناء تسجيل الدخول" }, { status: 500 });
   }
 }
